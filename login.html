@@ -239,12 +239,14 @@
 
 <div class="toast-container" id="toastContainer"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-config.js"></script>
 <script src="js/auth.js"></script>
 <script>
   // Redirect jika dah login
   (function() {
-    const s = JSON.parse(localStorage.getItem('pgp_session') || 'null');
-    if (s && new Date(s.expiresAt) > new Date()) window.location.href = 'dashboard.html';
+    const s = JSON.parse(localStorage.getItem('pgp_cached_session') || 'null');
+    if (s && s.userId) window.location.href = 'dashboard.html';
   })();
 
   function switchTab(tab) {
@@ -291,12 +293,11 @@
     setTimeout(()=>{ t.classList.add('toast-exit'); setTimeout(()=>t.remove(),350); }, 3500);
   }
 
-  function handleLogin(e) {
+  async function handleLogin(e) {
     e.preventDefault();
     ['loginEmail','loginPassword'].forEach(id=>clearErr(id+'Err'));
     const email = document.getElementById('loginEmail').value.trim();
     const pass  = document.getElementById('loginPassword').value;
-    const remember = document.getElementById('rememberMe').checked;
 
     let ok = true;
     if (!email) { showErr('loginEmailErr','Email diperlukan'); ok=false; }
@@ -306,20 +307,19 @@
     const btn = document.getElementById('loginBtn');
     btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Memproses...';
 
-    setTimeout(() => {
-      const res = loginUser(email, pass, remember);
-      btn.disabled = false; btn.innerHTML = '<i class="fa fa-right-to-bracket"></i> Log Masuk';
-      if (res.success) {
-        showToast('Selamat datang, ' + res.user.name + '!', 'success');
-        setTimeout(() => window.location.href = 'dashboard.html', 800);
-      } else {
-        showToast(res.message, 'error');
-        showErr('loginPasswordErr', res.message);
-      }
-    }, 600);
+    const res = await loginUser(email, pass);
+    btn.disabled = false; btn.innerHTML = '<i class="fa fa-right-to-bracket"></i> Log Masuk';
+    if (res.success) {
+      await cacheSession();
+      showToast('Selamat datang!', 'success');
+      setTimeout(() => window.location.href = 'dashboard.html', 800);
+    } else {
+      showToast(res.message, 'error');
+      showErr('loginPasswordErr', res.message);
+    }
   }
 
-  function handleRegister(e) {
+  async function handleRegister(e) {
     e.preventDefault();
     ['regName','regEmail','regPassword','regConfirm'].forEach(id=>clearErr(id+'Err'));
 
@@ -339,17 +339,16 @@
     const btn = document.getElementById('registerBtn');
     btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Mendaftar...';
 
-    setTimeout(() => {
-      const res = registerUser({ name, email, password, businessType: biz });
-      btn.disabled = false; btn.innerHTML = '<i class="fa fa-user-plus"></i> Daftar Sekarang';
-      if (res.success) {
-        showToast('Akaun berjaya dicipta! Mengalihkan...', 'success');
-        setTimeout(() => window.location.href = 'dashboard.html', 900);
-      } else {
-        showToast(res.message, 'error');
-        showErr('regEmailErr', res.message);
-      }
-    }, 700);
+    const res = await registerUser({ name, email, password, businessType: biz });
+    btn.disabled = false; btn.innerHTML = '<i class="fa fa-user-plus"></i> Daftar Sekarang';
+    if (res.success) {
+      await cacheSession();
+      showToast('Akaun berjaya dicipta! Mengalihkan...', 'success');
+      setTimeout(() => window.location.href = 'dashboard.html', 900);
+    } else {
+      showToast(res.message, 'error');
+      showErr('regEmailErr', res.message);
+    }
   }
 </script>
 </body>

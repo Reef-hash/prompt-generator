@@ -164,6 +164,8 @@
 
 <div id="toast-container"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-config.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/storage.js"></script>
 <script src="js/subscription.js"></script>
@@ -178,9 +180,9 @@
   }
 
   // Load data
-  function loadDashboard() {
-    const stats   = getUserStats();
-    const prompts = getUserPrompts();
+  async function loadDashboard() {
+    const stats   = await getUserStats();
+    const prompts = await getUserPrompts();
 
     document.getElementById('statTotal').textContent = stats.total;
     document.getElementById('statWeek').textContent  = stats.thisWeek;
@@ -207,17 +209,17 @@
       <div class="prompt-card" style="margin-bottom:12px">
         <div class="prompt-card-header">
           <div>
-            <div class="prompt-card-title">${p.businessTypeLabel || '📋'} ${p.title}</div>
-            <div class="prompt-card-meta">${timeAgo(p.updatedAt)} · v${p.version}</div>
+            <div class="prompt-card-title">${p.business_type_label || '📋'} ${p.title}</div>
+            <div class="prompt-card-meta">${timeAgo(p.updated_at)} · v${p.version}</div>
           </div>
           <button class="star-btn" onclick="toggleFavAndRefresh('${p.id}')" title="Kegemaran">
-            ${p.isFavourite ? '⭐' : '☆'}
+            ${p.is_favourite ? '⭐' : '☆'}
           </button>
         </div>
         <div class="prompt-card-actions">
           <button class="btn btn-ghost btn-sm" onclick="viewPrompt('${p.id}')"><i class="fa fa-eye"></i> Lihat</button>
           <a href="generator.html?edit=${p.id}" class="btn btn-ghost btn-sm"><i class="fa fa-pen"></i> Edit</a>
-          <button class="btn btn-ghost btn-sm" onclick="copyPrompt('${p.id}')"><i class="fa fa-copy"></i> Salin</button>
+          <button class="btn btn-ghost btn-sm" onclick="copyPromptAction('${p.id}')"><i class="fa fa-copy"></i> Salin</button>
           <button class="btn btn-danger btn-sm" onclick="removePrompt('${p.id}')"><i class="fa fa-trash"></i></button>
         </div>
       </div>`).join('');
@@ -225,16 +227,16 @@
 
   let _currentViewId = null;
 
-  function viewPrompt(id) {
-    const p = getPromptById(id);
+  async function viewPrompt(id) {
+    const p = await getPromptById(id);
     if (!p) return;
     _currentViewId = id;
     document.getElementById('modalTitle').textContent = p.title;
     document.getElementById('modalMeta').innerHTML = `
-      <span class="badge badge-green">${p.businessTypeLabel}</span>
+      <span class="badge badge-green">${p.business_type_label}</span>
       <span class="badge badge-blue">v${p.version}</span>
-      <span class="badge badge-yellow">${formatDate(p.createdAt)}</span>`;
-    document.getElementById('modalPromptText').value = p.generatedPrompt || '(Prompt kosong)';
+      <span class="badge badge-yellow">${new Date(p.created_at).toLocaleDateString('ms-MY')}</span>`;
+    document.getElementById('modalPromptText').value = p.generated_prompt || '(Prompt kosong)';
     openModal('promptModal');
   }
 
@@ -243,8 +245,8 @@
     copyToClipboard(text);
   }
 
-  function downloadPromptFromModal() {
-    const p = getPromptById(_currentViewId);
+  async function downloadPromptFromModal() {
+    const p = await getPromptById(_currentViewId);
     const text = document.getElementById('modalPromptText').value;
     exportAsTxt(text, p?.title || 'prompt');
   }
@@ -254,21 +256,21 @@
     openInClaude(text);
   }
 
-  function copyPrompt(id) {
-    const p = getPromptById(id);
-    if (p) copyToClipboard(p.generatedPrompt);
+  async function copyPromptAction(id) {
+    const p = await getPromptById(id);
+    if (p) copyToClipboard(p.generated_prompt);
   }
 
-  function toggleFavAndRefresh(id) {
-    toggleFavourite(id);
-    loadDashboard();
+  async function toggleFavAndRefresh(id) {
+    await toggleFavourite(id);
+    await loadDashboard();
     showToast('Kegemaran dikemas kini!', 'success');
   }
 
   function removePrompt(id) {
-    confirmAction('Padam prompt ini? Tindakan ini tidak boleh dibatalkan.', () => {
-      deletePrompt(id);
-      loadDashboard();
+    confirmAction('Padam prompt ini? Tindakan ini tidak boleh dibatalkan.', async () => {
+      await deletePrompt(id);
+      await loadDashboard();
       showToast('Prompt dipadam.', 'success');
     });
   }

@@ -1,142 +1,136 @@
-// ===================================================
-// storage.js — CRUD for prompts
-// ===================================================
-
-const STORAGE_KEY = 'pgp_data';
-
-function loadAllData() {
-  try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{"prompts":[]}');
-  } catch {
-    return { prompts: [] };
-  }
-}
-
-function saveAllData(data) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-}
+// =====================================================
+// storage.js — Supabase CRUD for prompts
+// =====================================================
 
 // ── Save new prompt ───────────────────────────────
-function savePrompt(promptData) {
+async function savePrompt(promptData) {
   const session = getSession();
   if (!session) return null;
 
-  const allData = loadAllData();
+  const { data, error } = await supabase.from('prompts').insert({
+    user_id: session.userId,
+    title: promptData.title || promptData.formData?.businessName || 'Tanpa Tajuk',
+    business_type: promptData.businessType,
+    business_type_label: promptData.businessTypeLabel,
+    form_data: promptData.formData || {},
+    generated_prompt: promptData.generatedPrompt || '',
+    tags: promptData.tags || []
+  }).select().single();
 
-  const newPrompt = {
-    id             : 'prompt_' + Date.now(),
-    userId         : session.userId,
-    title          : promptData.title || promptData.formData?.businessName || 'Tanpa Tajuk',
-    businessType   : promptData.businessType,
-    businessTypeLabel: promptData.businessTypeLabel,
-    formData       : promptData.formData || {},
-    generatedPrompt: promptData.generatedPrompt || '',
-    tags           : promptData.tags || [],
-    isFavourite    : false,
-    version        : 1,
-    createdAt      : new Date().toISOString(),
-    updatedAt      : new Date().toISOString()
-  };
-
-  allData.prompts.push(newPrompt);
-  saveAllData(allData);
-  updateUserStats(session.userId);
-  return newPrompt;
+  if (error) { console.error('savePrompt error:', error); return null; }
+  return data;
 }
 
 // ── Get all prompts for current user ─────────────
-function getUserPrompts(userId = null) {
+async function getUserPrompts() {
   const session = getSession();
-  const targetId = userId || session?.userId;
-  if (!targetId) return [];
+  if (!session) return [];
 
-  const allData = loadAllData();
-  return allData.prompts
-    .filter(p => p.userId === targetId)
-    .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+  const { data, error } = await supabase
+    .from('prompts')
+    .select('*')
+    .eq('user_id', session.userId)
+    .order('updated_at', { ascending: false });
+
+  if (error) { console.error('getUserPrompts error:', error); return []; }
+  return data || [];
 }
 
 // ── Get single prompt ─────────────────────────────
-function getPromptById(id) {
-  const allData = loadAllData();
-  return allData.prompts.find(p => p.id === id) || null;
+async function getPromptById(id) {
+  const { data, error } = await supabase
+    .from('prompts')
+    .select('*')
+    .eq('id', id)
+    .single();
+  if (error) return null;
+  return data;
 }
 
 // ── Update prompt ─────────────────────────────────
-function updatePrompt(promptId, updates) {
-  const allData = loadAllData();
-  const idx = allData.prompts.findIndex(p => p.id === promptId);
-  if (idx === -1) return { success: false, message: 'Prompt tidak dijumpai.' };
+async function updatePrompt(promptId, updates) {
+  const { data, error } = await supabase
+    .from('prompts')
+    .update({
+      ...updates,
+      updated_at: new Date().toISOString(),
+      version: (updates.version || 1) + 1
+    })
+    .eq('id', promptId)
+    .select()
+    .single();
 
-  allData.prompts[idx] = {
-    ...allData.prompts[idx],
-    ...updates,
-    updatedAt: new Date().toISOString(),
-    version  : (allData.prompts[idx].version || 1) + 1
-  };
-
-  saveAllData(allData);
-  return { success: true, prompt: allData.prompts[idx] };
+  if (error) return { success: false, message: error.message };
+  return { success: true, prompt: data };
 }
 
 // ── Delete prompt ─────────────────────────────────
-function deletePrompt(promptId) {
-  const allData = loadAllData();
-  const before = allData.prompts.length;
-  allData.prompts = allData.prompts.filter(p => p.id !== promptId);
-  saveAllData(allData);
-
-  const session = getSession();
-  if (session) updateUserStats(session.userId);
-
-  return { success: allData.prompts.length < before };
+async function deletePrompt(promptId) {
+  const { error } = await supabase
+    .from('prompts')
+    .delete()
+    .eq('id', promptId);
+  return { success: !error };
 }
 
 // ── Toggle favourite ──────────────────────────────
-function toggleFavourite(promptId) {
-  const allData = loadAllData();
-  const prompt = allData.prompts.find(p => p.id === promptId);
-  if (prompt) {
-    prompt.isFavourite = !prompt.isFavourite;
-    prompt.updatedAt   = new Date().toISOString();
-    saveAllData(allData);
-    return prompt.isFavourite;
-  }
-  return false;
+async function toggleFavourite(promptId) {
+  const prompt = await getPromptById(promptId);
+  if (!prompt) return false;
+
+  const newVal = !prompt.is_favourite;
+  await supabase
+    .from('prompts')
+    .update({ is_favourite: newVal, updated_at: new Date().toISOString() })
+    .eq('id', promptId);
+  return newVal;
 }
 
 // ── Search prompts ────────────────────────────────
-function searchPrompts(query) {
-  const prompts = getUserPrompts();
-  if (!query || !query.trim()) return prompts;
-  const q = query.toLowerCase().trim();
+async function searchPrompts(query) {
+  const session = getSession();
+  if (!session) return [];
+  if (!query || !query.trim()) return getUserPrompts();
 
-  return prompts.filter(p =>
-    p.title.toLowerCase().includes(q) ||
-    (p.businessTypeLabel || '').toLowerCase().includes(q) ||
-    (p.formData?.businessName || '').toLowerCase().includes(q) ||
-    (p.tags || []).some(t => t.toLowerCase().includes(q))
-  );
+  const q = query.toLowerCase().trim();
+  const { data } = await supabase
+    .from('prompts')
+    .select('*')
+    .eq('user_id', session.userId)
+    .or(`title.ilike.%${q}%,business_type_label.ilike.%${q}%`)
+    .order('updated_at', { ascending: false });
+
+  return data || [];
 }
 
 // ── Filter prompts ────────────────────────────────
-function filterPrompts(type = 'all', favouriteOnly = false) {
-  let prompts = getUserPrompts();
-  if (type !== 'all') prompts = prompts.filter(p => p.businessType === type);
-  if (favouriteOnly)  prompts = prompts.filter(p => p.isFavourite);
-  return prompts;
+async function filterPrompts(type = 'all', favouriteOnly = false) {
+  const session = getSession();
+  if (!session) return [];
+
+  let query = supabase.from('prompts').select('*').eq('user_id', session.userId);
+  if (type !== 'all') query = query.eq('business_type', type);
+  if (favouriteOnly) query = query.eq('is_favourite', true);
+  query = query.order('updated_at', { ascending: false });
+
+  const { data } = await query;
+  return data || [];
 }
 
 // ── Get stats ─────────────────────────────────────
-function getUserStats() {
-  const prompts = getUserPrompts();
-  const now     = new Date();
-  const weekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
+async function getUserStats() {
+  const prompts = await getUserPrompts();
+  const now = new Date();
+  const weekAgo = new Date(now - 7 * 864e5);
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
-  const thisWeek = prompts.filter(p => new Date(p.createdAt) > weekAgo).length;
+  const thisWeek = prompts.filter(p => new Date(p.created_at) > weekAgo).length;
+  const thisMonth = prompts.filter(p => new Date(p.created_at) > monthStart).length;
+
   const typeCounts = {};
   prompts.forEach(p => {
-    typeCounts[p.businessTypeLabel] = (typeCounts[p.businessTypeLabel] || 0) + 1;
+    const label = p.business_type_label || p.business_type;
+    typeCounts[label] = (typeCounts[label] || 0) + 1;
   });
 
   let topType = '-';
@@ -146,36 +140,21 @@ function getUserStats() {
   });
 
   return {
-    total     : prompts.length,
+    total: prompts.length,
     thisWeek,
-    topType   : topType.replace(/^[\S]+\s/, ''), // remove emoji
-    favourites: prompts.filter(p => p.isFavourite).length
+    thisMonth,
+    topType,
+    favourites: prompts.filter(p => p.is_favourite).length
   };
 }
 
-// ── Update user stats ─────────────────────────────
-function updateUserStats(userId) {
-  const users = JSON.parse(localStorage.getItem(AUTH_KEY) || '[]');
-  const user  = users.find(u => u.id === userId);
-  if (user) {
-    const prompts    = getUserPrompts(userId);
-    user.savedCount  = prompts.length;
-    user.lastActive  = new Date().toISOString();
-    localStorage.setItem(AUTH_KEY, JSON.stringify(users));
-  }
-}
-
-// ── Save draft ────────────────────────────────────
+// ── Draft (still localStorage — temporary) ───────
 function saveDraft(formData, businessType) {
   localStorage.setItem('pgp_draft', JSON.stringify({ formData, businessType, savedAt: new Date().toISOString() }));
 }
-
 function loadDraft() {
-  try {
-    return JSON.parse(localStorage.getItem('pgp_draft'));
-  } catch { return null; }
+  try { return JSON.parse(localStorage.getItem('pgp_draft')); } catch { return null; }
 }
-
 function clearDraft() {
   localStorage.removeItem('pgp_draft');
 }
@@ -184,13 +163,13 @@ function clearDraft() {
 function timeAgo(isoString) {
   const diff = Date.now() - new Date(isoString);
   const m = Math.floor(diff / 60000);
-  if (m < 1)  return 'baru sahaja';
+  if (m < 1) return 'baru sahaja';
   if (m < 60) return `${m} minit lepas`;
   const h = Math.floor(m / 60);
   if (h < 24) return `${h} jam lepas`;
   const d = Math.floor(h / 24);
-  if (d < 7)  return `${d} hari lepas`;
+  if (d < 7) return `${d} hari lepas`;
   const w = Math.floor(d / 7);
-  if (w < 5)  return `${w} minggu lepas`;
+  if (w < 5) return `${w} minggu lepas`;
   return new Date(isoString).toLocaleDateString('ms-MY');
 }

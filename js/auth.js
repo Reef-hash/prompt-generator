@@ -1,128 +1,124 @@
-// ===================================================
-// auth.js — Authentication system (localStorage-based)
-// ===================================================
-
-const AUTH_KEY    = 'pgp_users';
-const SESSION_KEY = 'pgp_session';
+// =====================================================
+// auth.js — Supabase Authentication
+// =====================================================
 
 // ── Register ──────────────────────────────────────
-function registerUser(userData) {
-  const users = JSON.parse(localStorage.getItem(AUTH_KEY) || '[]');
+async function registerUser(userData) {
+  try {
+    const { data, error } = await supabase.auth.signUp({
+      email: userData.email,
+      password: userData.password,
+      options: {
+        data: { name: userData.name }
+      }
+    });
 
-  if (users.find(u => u.email.toLowerCase() === userData.email.toLowerCase())) {
-    return { success: false, message: 'Email ini sudah didaftarkan.' };
+    if (error) return { success: false, message: error.message };
+
+    // Update profile with extra info
+    if (data.user) {
+      await supabase.from('profiles').update({
+        name: userData.name,
+        business_type: userData.businessType,
+        phone: userData.phone || null
+      }).eq('id', data.user.id);
+    }
+
+    return { success: true, user: data.user };
+  } catch (e) {
+    return { success: false, message: e.message || 'Ralat pendaftaran.' };
   }
-
-  const hashedPassword = btoa(userData.password + '_salt_pgp_2025');
-
-  const newUser = {
-    id: 'user_' + Date.now(),
-    name: userData.name,
-    email: userData.email.toLowerCase(),
-    password: hashedPassword,
-    businessType: userData.businessType,
-    createdAt: new Date().toISOString(),
-    savedCount: 0,
-    totalGenerated: 0,
-    lastActive: new Date().toISOString(),
-    plan: 'free'
-  };
-
-  users.push(newUser);
-  localStorage.setItem(AUTH_KEY, JSON.stringify(users));
-  createSession(newUser);
-  return { success: true, user: newUser };
 }
 
 // ── Login ─────────────────────────────────────────
-function loginUser(email, password, remember = false) {
-  const users = JSON.parse(localStorage.getItem(AUTH_KEY) || '[]');
-  const hashedPassword = btoa(password + '_salt_pgp_2025');
-  const user = users.find(u =>
-    u.email.toLowerCase() === email.toLowerCase() &&
-    u.password === hashedPassword
-  );
-
-  if (!user) {
-    return { success: false, message: 'Email atau kata laluan tidak sah.' };
+async function loginUser(email, password) {
+  try {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email, password
+    });
+    if (error) return { success: false, message: error.message };
+    return { success: true, user: data.user, session: data.session };
+  } catch (e) {
+    return { success: false, message: e.message || 'Ralat log masuk.' };
   }
-
-  createSession(user, remember);
-
-  // Update lastActive
-  user.lastActive = new Date().toISOString();
-  localStorage.setItem(AUTH_KEY, JSON.stringify(users));
-
-  return { success: true, user };
-}
-
-// ── Create Session ────────────────────────────────
-function createSession(user, remember = false) {
-  const days = remember ? 30 : 7;
-  const session = {
-    userId  : user.id,
-    name    : user.name,
-    email   : user.email,
-    plan    : user.plan,
-    initials: user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2),
-    expiresAt: new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString()
-  };
-  localStorage.setItem(SESSION_KEY, JSON.stringify(session));
 }
 
 // ── Get Session ───────────────────────────────────
+async function getSessionAsync() {
+  const { data: { session } } = await supabase.auth.getSession();
+  return session;
+}
+
 function getSession() {
+  // Synchronous check from cached data
+  const stored = localStorage.getItem('pgp_cached_session');
+  if (!stored) return null;
   try {
-    const session = JSON.parse(localStorage.getItem(SESSION_KEY));
-    if (!session) return null;
-    if (new Date(session.expiresAt) < new Date()) {
-      logout(false);
-      return null;
-    }
-    return session;
-  } catch {
+    const s = JSON.parse(stored);
+    if (s && s.userId) return s;
+  } catch(e) {}
+  return null;
+}
+
+// ── Cache session for sync access ─────────────────
+async function cacheSession() {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) {
+    localStorage.removeItem('pgp_cached_session');
     return null;
   }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', session.user.id)
+    .single();
+
+  const cached = {
+    userId: session.user.id,
+    name: profile?.name || session.user.user_metadata?.name || 'User',
+    email: session.user.email,
+    plan: profile?.plan || 'free',
+    isAdmin: profile?.is_admin || false,
+    initials: (profile?.name || 'U').split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2)
+  };
+  localStorage.setItem('pgp_cached_session', JSON.stringify(cached));
+  return cached;
 }
 
-// ── Get current user full data ────────────────────
-function getCurrentUser() {
-  const session = getSession();
+// ── Get current user profile ──────────────────────
+async function getCurrentProfile() {
+  const session = await getSessionAsync();
   if (!session) return null;
-  const users = JSON.parse(localStorage.getItem(AUTH_KEY) || '[]');
-  return users.find(u => u.id === session.userId) || null;
+  const { data } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', session.user.id)
+    .single();
+  return data;
 }
 
-// ── Update user profile ───────────────────────────
-function updateUserProfile(updates) {
-  const session = getSession();
+// ── Update profile ────────────────────────────────
+async function updateUserProfile(updates) {
+  const session = await getSessionAsync();
   if (!session) return { success: false };
-
-  const users = JSON.parse(localStorage.getItem(AUTH_KEY) || '[]');
-  const idx = users.findIndex(u => u.id === session.userId);
-  if (idx === -1) return { success: false };
-
-  users[idx] = { ...users[idx], ...updates, lastActive: new Date().toISOString() };
-  localStorage.setItem(AUTH_KEY, JSON.stringify(users));
-
-  // Refresh session name if name changed
-  if (updates.name) {
-    const s = getSession();
-    s.name = updates.name;
-    s.initials = updates.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
-    localStorage.setItem(SESSION_KEY, JSON.stringify(s));
-  }
-
-  return { success: true, user: users[idx] };
+  const { error } = await supabase
+    .from('profiles')
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq('id', session.user.id);
+  if (error) return { success: false, message: error.message };
+  await cacheSession();
+  return { success: true };
 }
 
 // ── Logout ────────────────────────────────────────
-function logout(redirect = true) {
-  localStorage.removeItem(SESSION_KEY);
+async function logout(redirect = true) {
+  await supabase.auth.signOut();
+  localStorage.removeItem('pgp_cached_session');
   if (redirect) window.location.href = 'login.html';
 }
 
-// ── Require Auth (redirect if not logged in) ──────
+// ── Auth guard ────────────────────────────────────
 function requireAuth() {
   const session = getSession();
   if (!session) {
@@ -132,17 +128,31 @@ function requireAuth() {
   return session;
 }
 
-// ── Redirect if already logged in ────────────────
+// ── Redirect if logged in ─────────────────────────
 function redirectIfLoggedIn() {
   const session = getSession();
   if (session) window.location.href = 'dashboard.html';
 }
 
-// ── Populate user UI elements ─────────────────────
+// ── Populate user UI ──────────────────────────────
 function populateUserUI(session) {
   if (!session) return;
   document.querySelectorAll('[data-user-name]').forEach(el => el.textContent = session.name);
   document.querySelectorAll('[data-user-email]').forEach(el => el.textContent = session.email);
   document.querySelectorAll('[data-user-initials]').forEach(el => el.textContent = session.initials);
-  document.querySelectorAll('[data-user-plan]').forEach(el => el.textContent = session.plan === 'pro' ? '⭐ Pro' : 'Free Plan');
+  document.querySelectorAll('[data-user-plan]').forEach(el => el.textContent = session.plan === 'pro' ? '⭐ Pro' : session.plan === 'starter' ? '⚡ Starter' : session.plan === 'agency' ? '🏢 Agency' : 'Free');
 }
+
+// ── Listen to auth changes ────────────────────────
+supabase.auth.onAuthStateChange(async (event, session) => {
+  if (event === 'SIGNED_IN' && session) {
+    await cacheSession();
+  } else if (event === 'SIGNED_OUT') {
+    localStorage.removeItem('pgp_cached_session');
+  }
+});
+
+// ── Init: cache session on load ───────────────────
+(async function initAuth() {
+  await cacheSession();
+})();

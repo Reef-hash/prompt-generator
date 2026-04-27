@@ -1,160 +1,135 @@
 // =====================================================
-// affiliate.js — Affiliate & referral system
+// affiliate.js — Supabase Affiliate System
 // =====================================================
-
-const AFF_KEY = 'pgp_affiliates';
-const AFF_EARN_KEY = 'pgp_affiliate_earnings';
-const AFF_WITHDRAW_KEY = 'pgp_withdrawals';
 const COMMISSION_RATE = 0.30;
 const MIN_WITHDRAW = 50;
 
 // ── Generate affiliate code ───────────────────────
-function generateAffiliateCode(userId) {
-  const users = JSON.parse(localStorage.getItem(AUTH_KEY)||'[]');
-  const user  = users.find(u=>u.id===userId);
-  if (!user) return null;
+async function generateAffiliateCode(userId) {
+  const { data: profile } = await supabase.from('profiles').select('name').eq('id', userId).single();
+  if (!profile) return null;
 
-  const prefix = user.name.replace(/[^a-zA-Z]/g,'').toUpperCase().slice(0,4) || 'USER';
+  const prefix = (profile.name||'USER').replace(/[^a-zA-Z]/g,'').toUpperCase().slice(0,4);
   const suffix = Math.random().toString(36).substring(2,6).toUpperCase();
-  const code   = prefix + suffix;
+  const code = prefix + suffix;
 
-  const idx = users.findIndex(u=>u.id===userId);
-  users[idx].affiliateCode    = code;
-  users[idx].affiliateEnabled = true;
-  users[idx].affiliateBalance = users[idx].affiliateBalance || 0;
-  users[idx].affiliateTotalEarned = users[idx].affiliateTotalEarned || 0;
-  users[idx].affiliateCreatedAt   = new Date().toISOString();
-  localStorage.setItem(AUTH_KEY, JSON.stringify(users));
+  await supabase.from('profiles').update({
+    affiliate_code: code, affiliate_enabled: true, updated_at: new Date().toISOString()
+  }).eq('id', userId);
+
   return code;
 }
 
 // ── Get affiliate stats ───────────────────────────
-function getAffiliateStats(userId) {
-  const users  = JSON.parse(localStorage.getItem(AUTH_KEY)||'[]');
-  const user   = users.find(u=>u.id===userId);
-  const earnings = JSON.parse(localStorage.getItem(AFF_EARN_KEY)||'[]')
-                   .filter(e=>e.affiliateId===userId);
+async function getAffiliateStats(userId) {
+  const { data: profile } = await supabase.from('profiles').select('*').eq('id', userId).single();
+  const { data: earnings } = await supabase.from('affiliate_earnings')
+    .select('*').eq('affiliate_id', userId).order('created_at', { ascending: false }).limit(20);
 
-  const subs = JSON.parse(localStorage.getItem('pgp_subscriptions')||'[]');
-  const referrals = users.filter(u=>u.referredBy===userId);
-  const activeReferrals = referrals.filter(u=>u.plan && u.plan!=='free');
+  const { data: referrals } = await supabase.from('profiles').select('id, plan').eq('referred_by', userId);
+  const activeReferrals = (referrals||[]).filter(u => u.plan && u.plan !== 'free');
 
-  const clicks = JSON.parse(localStorage.getItem('pgp_aff_clicks_'+userId)||'[]');
-  const thisMonth = new Date();
-  thisMonth.setDate(1); thisMonth.setHours(0,0,0,0);
-  const clicksThisMonth = clicks.filter(c=>new Date(c.at)>thisMonth).length;
+  const monthStart = new Date(); monthStart.setDate(1); monthStart.setHours(0,0,0,0);
+  const { count: clicksThisMonth } = await supabase.from('affiliate_clicks')
+    .select('*', { count: 'exact', head: true })
+    .eq('affiliate_id', userId)
+    .gte('clicked_at', monthStart.toISOString());
 
-  const pendingEarnings  = earnings.filter(e=>e.status==='pending').reduce((s,e)=>s+e.amount,0);
-  const approvedEarnings = earnings.filter(e=>e.status==='approved').reduce((s,e)=>s+e.amount,0);
+  const { count: totalClicks } = await supabase.from('affiliate_clicks')
+    .select('*', { count: 'exact', head: true })
+    .eq('affiliate_id', userId);
+
+  const pending = (earnings||[]).filter(e=>e.status==='pending').reduce((s,e)=>s+parseFloat(e.amount),0);
 
   return {
-    code            : user?.affiliateCode || null,
-    enabled         : user?.affiliateEnabled || false,
-    balance         : user?.affiliateBalance || 0,
-    totalEarned     : user?.affiliateTotalEarned || 0,
-    pendingEarnings,
-    approvedEarnings,
-    totalReferrals  : referrals.length,
-    activeReferrals : activeReferrals.length,
-    clicksThisMonth,
-    totalClicks     : clicks.length,
-    earnings        : earnings.slice(-20).reverse(),
-    referralLink    : `${window.location.origin}${window.location.pathname.split('/').slice(0,-1).join('/')}/index.html?ref=${user?.affiliateCode||''}`
+    code: profile?.affiliate_code || null,
+    enabled: profile?.affiliate_enabled || false,
+    balance: parseFloat(profile?.affiliate_balance || 0),
+    totalEarned: parseFloat(profile?.affiliate_total_earned || 0),
+    pendingEarnings: pending,
+    totalReferrals: (referrals||[]).length,
+    activeReferrals: activeReferrals.length,
+    clicksThisMonth: clicksThisMonth || 0,
+    totalClicks: totalClicks || 0,
+    earnings: earnings || [],
+    referralLink: `${window.location.origin}${window.location.pathname.replace(/\/[^/]*$/,'/')}/index.html?ref=${profile?.affiliate_code||''}`
   };
 }
 
 // ── Track affiliate click ─────────────────────────
-function trackAffiliateClick(code) {
+async function trackAffiliateClick(code) {
   if (!code) return;
-  // Save cookie-like in localStorage
   localStorage.setItem('pgp_ref', JSON.stringify({ code, at: new Date().toISOString() }));
 
-  // Find affiliate user and log click
-  const users = JSON.parse(localStorage.getItem(AUTH_KEY)||'[]');
-  const aff   = users.find(u=>u.affiliateCode===code);
+  const { data: aff } = await supabase.from('profiles')
+    .select('id').eq('affiliate_code', code).single();
   if (!aff) return;
 
-  const key = 'pgp_aff_clicks_'+aff.id;
-  const clicks = JSON.parse(localStorage.getItem(key)||'[]');
-  clicks.push({ at: new Date().toISOString(), code });
-  localStorage.setItem(key, JSON.stringify(clicks));
+  await supabase.from('affiliate_clicks').insert({
+    affiliate_id: aff.id, code
+  });
 }
 
-// ── Process commission after subscription ─────────
-function processAffiliateCommission(newUserId, amount) {
-  const ref = JSON.parse(localStorage.getItem('pgp_ref')||'null');
+// ── Process commission ────────────────────────────
+async function processAffiliateCommission(newUserId, amount) {
+  const ref = JSON.parse(localStorage.getItem('pgp_ref') || 'null');
   if (!ref || !ref.code) return;
-
-  // Check cookie is < 30 days
   if (new Date(ref.at) < new Date(Date.now() - 30*864e5)) {
     localStorage.removeItem('pgp_ref'); return;
   }
 
-  const users = JSON.parse(localStorage.getItem(AUTH_KEY)||'[]');
-  const aff   = users.find(u=>u.affiliateCode===ref.code);
-  if (!aff || aff.id===newUserId) return;
+  const { data: aff } = await supabase.from('profiles')
+    .select('id, affiliate_balance, affiliate_total_earned')
+    .eq('affiliate_code', ref.code).single();
+  if (!aff || aff.id === newUserId) return;
 
   const commission = Math.round(amount * COMMISSION_RATE * 100) / 100;
 
-  // Record earning
-  const earnings = JSON.parse(localStorage.getItem(AFF_EARN_KEY)||'[]');
-  earnings.push({
-    id: 'earn_'+Date.now(), affiliateId:aff.id, referredUserId:newUserId,
-    amount:commission, commissionRate:COMMISSION_RATE,
-    status:'approved', createdAt:new Date().toISOString()
+  await supabase.from('affiliate_earnings').insert({
+    affiliate_id: aff.id, referred_user_id: newUserId,
+    amount: commission, commission_rate: COMMISSION_RATE, status: 'approved'
   });
-  localStorage.setItem(AFF_EARN_KEY, JSON.stringify(earnings));
 
-  // Update affiliate balance
-  const affIdx = users.findIndex(u=>u.id===aff.id);
-  users[affIdx].affiliateBalance     = (users[affIdx].affiliateBalance||0) + commission;
-  users[affIdx].affiliateTotalEarned = (users[affIdx].affiliateTotalEarned||0) + commission;
+  await supabase.from('profiles').update({
+    affiliate_balance: parseFloat(aff.affiliate_balance || 0) + commission,
+    affiliate_total_earned: parseFloat(aff.affiliate_total_earned || 0) + commission,
+    updated_at: new Date().toISOString()
+  }).eq('id', aff.id);
 
-  // Record who referred the new user
-  const newIdx = users.findIndex(u=>u.id===newUserId);
-  if (newIdx!==-1) users[newIdx].referredBy = aff.id;
-
-  localStorage.setItem(AUTH_KEY, JSON.stringify(users));
+  await supabase.from('profiles').update({ referred_by: aff.id }).eq('id', newUserId);
   localStorage.removeItem('pgp_ref');
 }
 
 // ── Request withdrawal ────────────────────────────
-function requestWithdrawal(userId, amount, bankDetails) {
-  const users = JSON.parse(localStorage.getItem(AUTH_KEY)||'[]');
-  const user  = users.find(u=>u.id===userId);
-  if (!user) return {success:false, message:'Pengguna tidak dijumpai.'};
-  if ((user.affiliateBalance||0) < MIN_WITHDRAW)
-    return {success:false, message:`Minimum pengeluaran RM${MIN_WITHDRAW}. Baki semasa: RM${(user.affiliateBalance||0).toFixed(2)}`};
-  if (amount > (user.affiliateBalance||0))
-    return {success:false, message:'Jumlah melebihi baki anda.'};
+async function requestWithdrawal(userId, amount, bankDetails) {
+  const { data: profile } = await supabase.from('profiles').select('affiliate_balance').eq('id', userId).single();
+  const balance = parseFloat(profile?.affiliate_balance || 0);
+  if (balance < MIN_WITHDRAW) return { success:false, message:`Minimum RM${MIN_WITHDRAW}. Baki: RM${balance.toFixed(2)}` };
+  if (amount > balance) return { success:false, message:'Jumlah melebihi baki.' };
 
-  const req = {
-    id:'wd_'+Date.now(), userId, amount,
-    bankName: bankDetails.bankName, accountNumber: bankDetails.accountNumber,
-    accountName: bankDetails.accountName,
-    status:'pending', requestedAt:new Date().toISOString()
-  };
-  const wds = JSON.parse(localStorage.getItem(AFF_WITHDRAW_KEY)||'[]');
-  wds.push(req);
-  localStorage.setItem(AFF_WITHDRAW_KEY, JSON.stringify(wds));
+  const { error } = await supabase.from('withdrawals').insert({
+    user_id: userId, amount,
+    bank_name: bankDetails.bankName, account_number: bankDetails.accountNumber,
+    account_name: bankDetails.accountName
+  });
+  if (error) return { success:false, message: error.message };
 
-  // Deduct from balance (hold)
-  const idx = users.findIndex(u=>u.id===userId);
-  users[idx].affiliateBalance -= amount;
-  localStorage.setItem(AUTH_KEY, JSON.stringify(users));
+  await supabase.from('profiles').update({
+    affiliate_balance: balance - amount
+  }).eq('id', userId);
 
-  return {success:true, withdrawal:req};
+  return { success:true };
 }
 
-// ── Get withdrawal history ────────────────────────
-function getWithdrawals(userId) {
-  return JSON.parse(localStorage.getItem(AFF_WITHDRAW_KEY)||'[]')
-    .filter(w=>w.userId===userId)
-    .sort((a,b)=>new Date(b.requestedAt)-new Date(a.requestedAt));
+// ── Get withdrawals ───────────────────────────────
+async function getWithdrawals(userId) {
+  const { data } = await supabase.from('withdrawals')
+    .select('*').eq('user_id', userId).order('requested_at', { ascending: false });
+  return data || [];
 }
 
 // ── Check ref param on load ───────────────────────
-(function checkRefParam(){
+(function checkRefParam() {
   const url = new URLSearchParams(window.location.search);
   const ref = url.get('ref');
   if (ref) trackAffiliateClick(ref);
