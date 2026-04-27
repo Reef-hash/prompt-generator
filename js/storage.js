@@ -4,21 +4,34 @@
 
 // ── Save new prompt ───────────────────────────────
 async function savePrompt(promptData) {
-  const session = getSession();
-  if (!session) return null;
+  try {
+    const session = getSession();
+    if (!session) {
+      showToast('Sila log masuk semula.', 'error');
+      return null;
+    }
 
-  const { data, error } = await supabase.from('prompts').insert({
-    user_id: session.userId,
-    title: promptData.title || promptData.formData?.businessName || 'Tanpa Tajuk',
-    business_type: promptData.businessType,
-    business_type_label: promptData.businessTypeLabel,
-    form_data: promptData.formData || {},
-    generated_prompt: promptData.generatedPrompt || '',
-    tags: promptData.tags || []
-  }).select().single();
+    const { data, error } = await supabase.from('prompts').insert({
+      user_id: session.userId,
+      title: promptData.title || promptData.formData?.businessName || 'Tanpa Tajuk',
+      business_type: promptData.businessType,
+      business_type_label: promptData.businessTypeLabel,
+      form_data: promptData.formData || {},
+      generated_prompt: promptData.generatedPrompt || '',
+      tags: promptData.tags || []
+    }).select().single();
 
-  if (error) { console.error('savePrompt error:', error); return null; }
-  return data;
+    if (error) {
+      console.error('savePrompt DB error:', error);
+      showToast('Gagal menyimpan ke database: ' + error.message, 'error');
+      return null;
+    }
+    return data;
+  } catch (err) {
+    console.error('savePrompt exception:', err);
+    showToast('Ralat teknikal semasa menyimpan. Sila cuba lagi atau log keluar & masuk semula.', 'error');
+    return null;
+  }
 }
 
 // ── Get all prompts for current user ─────────────

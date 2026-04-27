@@ -62,28 +62,33 @@ function getSession() {
 
 // ── Cache session for sync access ─────────────────
 async function cacheSession() {
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session) {
-    localStorage.removeItem('pgp_cached_session');
-    return null;
+  try {
+    const { data: { session }, error: sessionErr } = await supabase.auth.getSession();
+    if (sessionErr || !session) {
+      localStorage.removeItem('pgp_cached_session');
+      return null;
+    }
+
+    const { data: profile, error: profErr } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', session.user.id)
+      .single();
+
+    const cached = {
+      userId: session.user.id,
+      name: profile?.name || session.user.user_metadata?.name || 'User',
+      email: session.user.email,
+      plan: profile?.plan || 'free',
+      isAdmin: profile?.is_admin || false,
+      initials: (profile?.name || 'U').split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2)
+    };
+    localStorage.setItem('pgp_cached_session', JSON.stringify(cached));
+    return cached;
+  } catch (err) {
+    console.warn("Auth lock or network issue:", err.message);
+    return getSession(); // Return existing cache if fails
   }
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', session.user.id)
-    .single();
-
-  const cached = {
-    userId: session.user.id,
-    name: profile?.name || session.user.user_metadata?.name || 'User',
-    email: session.user.email,
-    plan: profile?.plan || 'free',
-    isAdmin: profile?.is_admin || false,
-    initials: (profile?.name || 'U').split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2)
-  };
-  localStorage.setItem('pgp_cached_session', JSON.stringify(cached));
-  return cached;
 }
 
 // ── Get current user profile ──────────────────────
@@ -113,8 +118,12 @@ async function updateUserProfile(updates) {
 
 // ── Logout ────────────────────────────────────────
 async function logout(redirect = true) {
-  await supabase.auth.signOut();
-  localStorage.removeItem('pgp_cached_session');
+  try {
+    await supabase.auth.signOut();
+  } catch (e) {
+    console.warn("SignOut error (likely lock issue), forcing local clear.");
+  }
+  localStorage.clear(); // Clear everything to be safe
   if (redirect) window.location.href = 'login.html';
 }
 
