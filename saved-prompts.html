@@ -153,25 +153,25 @@ function setTab(tab, el) {
   applyFilters();
 }
 
-function applyFilters() {
+async function applyFilters() {
   const q    = document.getElementById('searchInput').value.trim();
   const sort = document.getElementById('sortSelect').value;
-  let prompts = getUserPrompts();
+  let prompts = await getUserPrompts();
 
-  if (currentTab === 'favourite') prompts = prompts.filter(p => p.isFavourite);
+  if (currentTab === 'favourite') prompts = prompts.filter(p => p.is_favourite);
   if (q) {
     const ql = q.toLowerCase();
     prompts = prompts.filter(p =>
       p.title.toLowerCase().includes(ql) ||
-      (p.businessTypeLabel||'').toLowerCase().includes(ql) ||
+      (p.business_type_label||'').toLowerCase().includes(ql) ||
       (p.tags||[]).some(t=>t.toLowerCase().includes(ql))
     );
   }
 
-  if (sort === 'oldest') prompts.sort((a,b) => new Date(a.createdAt)-new Date(b.createdAt));
+  if (sort === 'oldest') prompts.sort((a,b) => new Date(a.created_at)-new Date(b.created_at));
   else if (sort === 'az') prompts.sort((a,b) => a.title.localeCompare(b.title));
-  else if (sort === 'fav') prompts.sort((a,b) => (b.isFavourite?1:0)-(a.isFavourite?1:0));
-  else prompts.sort((a,b) => new Date(b.updatedAt)-new Date(a.updatedAt));
+  else if (sort === 'fav') prompts.sort((a,b) => (b.is_favourite?1:0)-(a.is_favourite?1:0));
+  else prompts.sort((a,b) => new Date(b.updated_at)-new Date(a.updated_at));
 
   renderPrompts(prompts);
 }
@@ -194,14 +194,14 @@ function renderPrompts(prompts) {
     <div class="prompt-card">
       <div class="prompt-card-header">
         <div style="flex:1;min-width:0">
-          <div class="prompt-card-title" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.businessTypeLabel||''} ${p.title}</div>
-          <div class="prompt-card-meta">${timeAgo(p.updatedAt)} &middot; v${p.version||1}</div>
+          <div class="prompt-card-title" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.business_type_label||''} ${p.title}</div>
+          <div class="prompt-card-meta">${timeAgo(p.updated_at)} &middot; v${p.version||1}</div>
         </div>
-        <button class="star-btn" onclick="toggleFav('${p.id}')" title="${p.isFavourite?'Buang kegemaran':'Tambah kegemaran'}">${p.isFavourite?'⭐':'☆'}</button>
+        <button class="star-btn" onclick="toggleFav('${p.id}')" title="${p.is_favourite?'Buang kegemaran':'Tambah kegemaran'}">${p.is_favourite?'⭐':'☆'}</button>
       </div>
       <div class="prompt-card-tags">
         ${(p.tags||[]).slice(0,3).map(t=>`<span class="badge badge-blue">#${t}</span>`).join('')}
-        ${p.generatedPrompt ? `<span class="badge badge-green">${p.generatedPrompt.length} aksara</span>` : ''}
+        ${p.generated_prompt ? `<span class="badge badge-green">${p.generated_prompt.length} aksara</span>` : ''}
       </div>
       <div class="prompt-card-actions">
         <button class="btn btn-ghost btn-sm" onclick="viewPrompt('${p.id}')"><i class="fa fa-eye"></i> Lihat</button>
@@ -212,39 +212,39 @@ function renderPrompts(prompts) {
     </div>`).join('');
 }
 
-function viewPrompt(id) {
-  const p = getPromptById(id);
+async function viewPrompt(id) {
+  const p = await getPromptById(id);
   if (!p) return;
   currentView = p;
   document.getElementById('viewTitle').textContent = p.title;
   document.getElementById('viewMeta').innerHTML = `
-    <span class="badge badge-green">${p.businessTypeLabel||'Prompt'}</span>
+    <span class="badge badge-green">${p.business_type_label||'Prompt'}</span>
     <span class="badge badge-blue">v${p.version||1}</span>
-    <span class="badge badge-yellow">${formatDate(p.createdAt)}</span>
-    ${p.isFavourite?'<span class="badge badge-yellow">⭐ Kegemaran</span>':''}`;
-  document.getElementById('viewText').value = p.generatedPrompt || '(Prompt kosong)';
+    <span class="badge badge-yellow">${new Date(p.created_at).toLocaleDateString('ms-MY')}</span>
+    ${p.is_favourite?'<span class="badge badge-yellow">⭐ Kegemaran</span>':''}`;
+  document.getElementById('viewText').value = p.generated_prompt || '(Prompt kosong)';
   openModal('viewModal');
 }
 
-function copyView()   { copyToClipboard(currentView?.generatedPrompt||''); }
-function downloadView(){ if(currentView) exportAsTxt(currentView.generatedPrompt, currentView.title); }
-function openClaudeView() { if(currentView) openInClaude(currentView.generatedPrompt); }
+function copyView()   { copyToClipboard(currentView?.generated_prompt||''); }
+function downloadView(){ if(currentView) exportAsTxt(currentView.generated_prompt, currentView.title); }
+function openClaudeView() { if(currentView) openInClaude(currentView.generated_prompt); }
 function editCurrent() { if(currentView){ closeModal('viewModal'); window.location.href='generator.html?edit='+currentView.id; } }
 
-function copyPrompt(id) {
-  const p = getPromptById(id);
-  if (p) copyToClipboard(p.generatedPrompt||'');
+async function copyPrompt(id) {
+  const p = await getPromptById(id);
+  if (p) copyToClipboard(p.generated_prompt||'');
 }
 
-function toggleFav(id) {
-  const isFav = toggleFavourite(id);
+async function toggleFav(id) {
+  const isFav = await toggleFavourite(id);
   showToast(isFav ? 'Ditambah ke kegemaran ⭐' : 'Dibuang dari kegemaran', 'success');
   applyFilters();
 }
 
 function removePrompt(id) {
-  confirmAction('Padam prompt ini? Tindakan ini tidak boleh dibatalkan.', () => {
-    deletePrompt(id);
+  confirmAction('Padam prompt ini? Tindakan ini tidak boleh dibatalkan.', async () => {
+    await deletePrompt(id);
     showToast('Prompt dipadam.', 'success');
     applyFilters();
   });

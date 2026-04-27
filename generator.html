@@ -372,16 +372,16 @@ function copyGenerated()    { copyToClipboard(generatedText); }
 function downloadGenerated(){ exportAsTxt(generatedText, document.getElementById('bizName').value || 'prompt'); }
 function openClaudeGenerated() { openInClaude(generatedText); }
 
-function saveGenerated() {
+async function saveGenerated() {
   if (!generatedText) { showToast('Jana prompt dahulu!','error'); return; }
   const tpl = BUSINESS_TEMPLATES[selectedBizType] || {};
   const name = document.getElementById('bizName').value.trim() || 'Tanpa Nama';
 
   if (editingId) {
-    updatePrompt(editingId, { title: name, generatedPrompt: generatedText, businessTypeLabel: tpl.label });
+    await updatePrompt(editingId, { title: name, generated_prompt: generatedText, business_type_label: tpl.label });
     showToast('Prompt dikemas kini!','success');
   } else {
-    savePrompt({
+    await savePrompt({
       title            : name,
       businessType     : selectedBizType,
       businessTypeLabel: tpl.label,
@@ -396,20 +396,20 @@ function saveGenerated() {
 }
 
 // ── Handle edit mode ─────────────────────────────────
-(function init() {
+(async function init() {
   renderBizGrid();
   const params = new URLSearchParams(window.location.search);
   const editId = params.get('edit');
   if (editId) {
-    const p = getPromptById(editId);
+    const p = await getPromptById(editId);
     if (p) {
       editingId       = editId;
-      selectedBizType = p.businessType;
+      selectedBizType = p.business_type;
       document.getElementById('nextStep1').disabled = false;
       // Pre-fill step 2
-      document.getElementById('bizName').value    = p.formData?.businessName || p.title || '';
-      document.getElementById('bizDesc').value    = p.formData?.description  || '';
-      document.getElementById('bizUsp').value     = p.formData?.usp          || '';
+      document.getElementById('bizName').value    = p.form_data?.businessName || p.title || '';
+      document.getElementById('bizDesc').value    = p.form_data?.description  || '';
+      document.getElementById('bizUsp').value     = p.form_data?.usp          || '';
       goStep(2);
       renderBizGrid();
     }
