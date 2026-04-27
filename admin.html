@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin Panel — PromptBiz Pro</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <link rel="stylesheet" href="css/style.css"/>
+  <style>
+    .admin-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:28px}
+    .admin-stat{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:20px;transition:.3s}
+    .admin-stat:hover{border-color:var(--accent-primary);transform:translateY(-2px)}
+    .admin-stat .as-icon{font-size:1.3rem;margin-bottom:8px}
+    .admin-stat .as-val{font-size:1.8rem;font-weight:800;background:linear-gradient(135deg,var(--accent-light),#58a6ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .admin-stat .as-label{font-size:.78rem;color:var(--text-secondary);margin-top:2px}
+    .admin-stat .as-change{font-size:.75rem;margin-top:4px}
+    .admin-stat .as-change.up{color:#3fb950}
+    .admin-stat .as-change.down{color:#f85149}
+    .data-table{width:100%;border-collapse:collapse;font-size:.85rem}
+    .data-table th{text-align:left;padding:10px 14px;color:var(--text-muted);font-size:.75rem;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border)}
+    .data-table td{padding:10px 14px;border-bottom:1px solid rgba(48,54,61,.5);color:var(--text-secondary)}
+    .data-table tr:hover td{background:var(--bg-hover)}
+    .tab-nav{display:flex;gap:4px;margin-bottom:20px;border-bottom:1px solid var(--border);padding-bottom:0}
+    .tab-btn{padding:10px 18px;border:none;background:none;color:var(--text-muted);font-family:'Outfit',sans-serif;font-size:.88rem;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;transition:.25s}
+    .tab-btn:hover{color:var(--text-primary)}
+    .tab-btn.active{color:var(--accent-light);border-bottom-color:var(--accent-primary)}
+    .tab-content{display:none}.tab-content.active{display:block;animation:fadeIn .3s ease}
+    @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+    .chart-placeholder{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:24px;min-height:200px;display:flex;flex-direction:column;gap:12px}
+    .chart-bar-row{display:flex;align-items:center;gap:12px}
+    .chart-bar-label{font-size:.78rem;color:var(--text-muted);width:80px;text-align:right}
+    .chart-bar{height:24px;border-radius:4px;transition:width .6s ease;background:linear-gradient(90deg,var(--accent-primary),#388BFD)}
+    .chart-bar-val{font-size:.78rem;color:var(--text-secondary);min-width:60px}
+    @media(max-width:900px){.admin-grid{grid-template-columns:repeat(2,1fr)}}
+    @media(max-width:550px){.admin-grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<div class="app-layout">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo"><h1>👑 Admin Panel</h1><p>PromptBiz Pro</p></div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">
+        <div class="nav-section-label">Admin</div>
+        <a href="#" class="nav-link active" onclick="showTab('overview')"><span class="nav-icon">📊</span> Overview</a>
+        <a href="#" class="nav-link" onclick="showTab('users')"><span class="nav-icon">👥</span> Pengguna</a>
+        <a href="#" class="nav-link" onclick="showTab('subs')"><span class="nav-icon">💰</span> Subscription</a>
+        <a href="#" class="nav-link" onclick="showTab('promo')"><span class="nav-icon">🎟️</span> Kod Promo</a>
+        <a href="#" class="nav-link" onclick="showTab('affiliate')"><span class="nav-icon">🔗</span> Affiliate</a>
+      </div>
+      <div class="nav-section">
+        <div class="nav-section-label">Navigasi</div>
+        <a href="dashboard.html" class="nav-link"><span class="nav-icon">🏠</span> Dashboard User</a>
+        <a href="#" class="nav-link" data-logout><span class="nav-icon">🚪</span> Log Keluar</a>
+      </div>
+    </nav>
+  </aside>
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <main class="main-content">
+    <div class="top-bar">
+      <button class="hamburger" id="hamburger"><span></span><span></span><span></span></button>
+      <span style="font-weight:700">👑 Admin Panel</span><div style="width:34px"></div>
+    </div>
+
+    <div class="page-header"><h1 class="page-title">👑 Admin Panel</h1><p class="page-subtitle">Urus platform PromptBiz Pro anda</p></div>
+    <div class="page-body">
+
+      <!-- TAB: OVERVIEW -->
+      <div class="tab-content active" id="tabOverview">
+        <div class="admin-grid" id="adminStats"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px" id="chartsRow">
+          <div class="card"><div class="card-header"><h3 class="card-title">📈 Pengguna Mengikut Pelan</h3></div><div id="planChart"></div></div>
+          <div class="card"><div class="card-header"><h3 class="card-title">💰 Pendapatan (MRR)</h3></div><div id="revenueInfo"></div></div>
+        </div>
+        <div class="card"><div class="card-header"><h3 class="card-title">👥 Pengguna Terbaru</h3></div><div style="overflow-x:auto" id="recentUsersTable"></div></div>
+      </div>
+
+      <!-- TAB: USERS -->
+      <div class="tab-content" id="tabUsers">
+        <div style="display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap">
+          <div class="search-wrap" style="max-width:300px"><span class="search-icon"><i class="fa fa-search"></i></span><input type="text" class="form-control" id="userSearch" placeholder="Cari pengguna..." oninput="renderUsers()"/></div>
+          <select class="form-control" id="userPlanFilter" onchange="renderUsers()" style="width:auto;padding:8px 14px"><option value="all">Semua Pelan</option><option value="free">Free</option><option value="starter">Starter</option><option value="pro">Pro</option><option value="agency">Agency</option></select>
+        </div>
+        <div class="card"><div style="overflow-x:auto" id="usersTable"></div></div>
+      </div>
+
+      <!-- TAB: SUBSCRIPTIONS -->
+      <div class="tab-content" id="tabSubs">
+        <div class="card"><div class="card-header"><h3 class="card-title">💰 Senarai Subscription</h3></div><div style="overflow-x:auto" id="subsTable"></div></div>
+      </div>
+
+      <!-- TAB: PROMO -->
+      <div class="tab-content" id="tabPromo">
+        <div class="card">
+          <div class="card-header"><h3 class="card-title">🎟️ Kod Promosi</h3><button class="btn btn-primary btn-sm" onclick="showAddPromo()"><i class="fa fa-plus"></i> Tambah</button></div>
+          <div style="overflow-x:auto" id="promoTable"></div>
+        </div>
+      </div>
+
+      <!-- TAB: AFFILIATE -->
+      <div class="tab-content" id="tabAffiliate">
+        <div class="card"><div class="card-header"><h3 class="card-title">🔗 Withdrawal Requests</h3></div><div style="overflow-x:auto" id="withdrawTable"></div></div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<!-- ADD PROMO MODAL -->
+<div class="modal-overlay" id="addPromoModal">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-header"><h3 class="modal-title">Tambah Kod Promo</h3><button class="modal-close" onclick="closeModal('addPromoModal')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label">Kod</label><input type="text" class="form-control" id="newPromoCode" placeholder="CONTOH30"/></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-group"><label class="form-label">Jenis</label><select class="form-control" id="newPromoType"><option value="percentage">Peratusan (%)</option><option value="fixed">Tetap (RM)</option></select></div>
+        <div class="form-group"><label class="form-label">Nilai</label><input type="number" class="form-control" id="newPromoValue" placeholder="30"/></div>
+      </div>
+      <div class="form-group"><label class="form-label">Had Penggunaan (kosong=unlimited)</label><input type="number" class="form-control" id="newPromoMax" placeholder="100"/></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('addPromoModal')">Batal</button><button class="btn btn-primary" onclick="addPromoCode()">Tambah</button></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="confirmModal"><div class="modal" style="max-width:400px"><div class="modal-header"><h3 class="modal-title">Pengesahan</h3><button class="modal-close" onclick="closeConfirmModal()">✕</button></div><div class="modal-body"><p id="confirmMessage" style="color:var(--text-secondary)"></p></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeConfirmModal()">Batal</button><button class="btn btn-danger" id="confirmOk">Ya</button></div></div></div>
+
+<div id="toast-container"></div>
+
+<script src="js/auth.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/subscription.js"></script>
+<script src="js/affiliate.js"></script>
+<script src="js/utils.js"></script>
+<script>
+const session = requireAuth();
+if(session) populateUserUI(session);
+
+function showTab(id){
+  const map={overview:'tabOverview',users:'tabUsers',subs:'tabSubs',promo:'tabPromo',affiliate:'tabAffiliate'};
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.nav-link').forEach(n=>n.classList.remove('active'));
+  document.getElementById(map[id]).classList.add('active');
+  event.currentTarget.classList.add('active');
+  if(id==='users') renderUsers();
+  if(id==='subs') renderSubs();
+  if(id==='promo') renderPromos();
+  if(id==='affiliate') renderWithdrawals();
+}
+
+function loadOverview(){
+  const users=JSON.parse(localStorage.getItem(AUTH_KEY)||'[]');
+  const subs=JSON.parse(localStorage.getItem('pgp_subscriptions')||'[]');
+  const prompts=JSON.parse(localStorage.getItem(STORAGE_KEY)||'{"prompts":[]}').prompts;
+  const activeSubs=subs.filter(s=>s.status==='active');
+  const mrr=activeSubs.reduce((s,sub)=>{const p=PLANS[sub.plan];return s+(sub.billingCycle==='yearly'?p?.price.yearly||0:p?.price.monthly||0)},0);
+
+  document.getElementById('adminStats').innerHTML=`
+    <div class="admin-stat"><div class="as-icon">👥</div><div class="as-val">${users.length}</div><div class="as-label">Jumlah Pengguna</div></div>
+    <div class="admin-stat"><div class="as-icon">💰</div><div class="as-val">RM${mrr}</div><div class="as-label">MRR (Monthly)</div></div>
+    <div class="admin-stat"><div class="as-icon">📋</div><div class="as-val">${prompts.length}</div><div class="as-label">Jumlah Prompt</div></div>
+    <div class="admin-stat"><div class="as-icon">💳</div><div class="as-val">${activeSubs.length}</div><div class="as-label">Subscription Aktif</div></div>`;
+
+  // Plan chart
+  const planCounts={free:0,starter:0,pro:0,agency:0};
+  users.forEach(u=>{ const p=u.plan||'free'; if(planCounts[p]!==undefined) planCounts[p]++; });
+  const maxC=Math.max(...Object.values(planCounts),1);
+  document.getElementById('planChart').innerHTML=Object.entries(planCounts).map(([k,v])=>`
+    <div class="chart-bar-row"><div class="chart-bar-label">${PLANS[k]?.icon||''} ${k}</div><div class="chart-bar" style="width:${(v/maxC)*100}%"></div><div class="chart-bar-val">${v} users</div></div>`).join('');
+
+  document.getElementById('revenueInfo').innerHTML=`
+    <div style="font-size:2rem;font-weight:800;background:linear-gradient(135deg,var(--accent-light),#58a6ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px">RM${mrr}/bln</div>
+    <p style="color:var(--text-secondary);font-size:.88rem">ARR: RM${mrr*12}/tahun</p>
+    <p style="color:var(--text-muted);font-size:.82rem;margin-top:8px">${activeSubs.length} subscription aktif</p>`;
+
+  // Recent users table
+  const recent=users.slice(-8).reverse();
+  document.getElementById('recentUsersTable').innerHTML=`<table class="data-table"><thead><tr><th>Nama</th><th>Email</th><th>Pelan</th><th>Daftar</th></tr></thead><tbody>
+    ${recent.map(u=>`<tr><td style="font-weight:600;color:var(--text-primary)">${u.name}</td><td>${u.email}</td><td><span class="badge badge-green">${u.plan||'free'}</span></td><td>${new Date(u.createdAt).toLocaleDateString('ms-MY')}</td></tr>`).join('')}
+  </tbody></table>`;
+}
+
+function renderUsers(){
+  const users=JSON.parse(localStorage.getItem(AUTH_KEY)||'[]');
+  const q=(document.getElementById('userSearch')?.value||'').toLowerCase();
+  const pf=document.getElementById('userPlanFilter')?.value||'all';
+  let filtered=users;
+  if(q) filtered=filtered.filter(u=>u.name.toLowerCase().includes(q)||u.email.toLowerCase().includes(q));
+  if(pf!=='all') filtered=filtered.filter(u=>(u.plan||'free')===pf);
+
+  document.getElementById('usersTable').innerHTML=`<table class="data-table"><thead><tr><th>Nama</th><th>Email</th><th>Pelan</th><th>Prompt</th><th>Daftar</th><th>Tindakan</th></tr></thead><tbody>
+    ${filtered.map(u=>`<tr>
+      <td style="font-weight:600;color:var(--text-primary)">${u.name}</td><td>${u.email}</td>
+      <td><span class="badge badge-green">${u.plan||'free'}</span></td>
+      <td>${u.savedCount||0}</td>
+      <td>${new Date(u.createdAt).toLocaleDateString('ms-MY')}</td>
+      <td><select class="form-control" style="padding:4px 8px;font-size:.78rem;width:auto" onchange="adminChangePlan('${u.id}',this.value)">
+        ${['free','starter','pro','agency'].map(p=>`<option value="${p}" ${(u.plan||'free')===p?'selected':''}>${p}</option>`).join('')}
+      </select></td>
+    </tr>`).join('')}
+  </tbody></table>`;
+}
+
+function adminChangePlan(userId,newPlan){
+  const users=JSON.parse(localStorage.getItem(AUTH_KEY)||'[]');
+  const idx=users.findIndex(u=>u.id===userId);
+  if(idx===-1) return;
+  users[idx].plan=newPlan;
+  users[idx].aiCreditsLeft=PLANS[newPlan]?.limits.aiCalls===-1?99999:PLANS[newPlan]?.limits.aiCalls||0;
+  localStorage.setItem(AUTH_KEY,JSON.stringify(users));
+  showToast(`Pelan ${users[idx].name} ditukar ke ${newPlan}`,'success');
+  loadOverview();
+}
+
+function renderSubs(){
+  const subs=JSON.parse(localStorage.getItem('pgp_subscriptions')||'[]').reverse();
+  const users=JSON.parse(localStorage.getItem(AUTH_KEY)||'[]');
+  document.getElementById('subsTable').innerHTML=`<table class="data-table"><thead><tr><th>Pengguna</th><th>Pelan</th><th>Jumlah</th><th>Kitaran</th><th>Status</th><th>Tarikh</th></tr></thead><tbody>
+    ${subs.map(s=>{const u=users.find(x=>x.id===s.userId); return `<tr>
+      <td style="font-weight:600;color:var(--text-primary)">${u?.name||'-'}</td>
+      <td><span class="badge badge-green">${s.plan}</span></td>
+      <td>RM${s.amount}</td><td>${s.billingCycle}</td>
+      <td><span class="badge ${s.status==='active'?'badge-green':'badge-red'}">${s.status}</span></td>
+      <td>${new Date(s.startedAt).toLocaleDateString('ms-MY')}</td></tr>`;}).join('')}
+  </tbody></table>`;
+}
+
+function renderPromos(){
+  const codes=JSON.parse(localStorage.getItem('pgp_promo_codes')||'[]');
+  document.getElementById('promoTable').innerHTML=`<table class="data-table"><thead><tr><th>Kod</th><th>Jenis</th><th>Nilai</th><th>Digunakan</th><th>Status</th><th>Tindakan</th></tr></thead><tbody>
+    ${codes.map(c=>`<tr>
+      <td style="font-weight:700;color:var(--accent-light)">${c.code}</td>
+      <td>${c.type==='percentage'?'Peratusan':'Tetap'}</td>
+      <td>${c.type==='percentage'?c.value+'%':'RM'+c.value}</td>
+      <td>${c.usedCount||0}${c.maxUses?'/'+c.maxUses:'/∞'}</td>
+      <td><span class="badge ${c.active?'badge-green':'badge-red'}">${c.active?'Aktif':'Tidak Aktif'}</span></td>
+      <td><button class="btn btn-ghost btn-sm" onclick="togglePromoActive('${c.id}')">${c.active?'Nyahaktif':'Aktifkan'}</button></td>
+    </tr>`).join('')}
+  </tbody></table>`;
+}
+
+function showAddPromo(){ openModal('addPromoModal'); }
+function addPromoCode(){
+  const code=document.getElementById('newPromoCode').value.trim().toUpperCase();
+  const type=document.getElementById('newPromoType').value;
+  const value=parseFloat(document.getElementById('newPromoValue').value);
+  const max=parseInt(document.getElementById('newPromoMax').value)||null;
+  if(!code||!value){showToast('Sila isi semua maklumat.','error');return;}
+  const codes=JSON.parse(localStorage.getItem('pgp_promo_codes')||'[]');
+  codes.push({id:'p_'+Date.now(),code,type,value,maxUses:max,usedCount:0,active:true});
+  localStorage.setItem('pgp_promo_codes',JSON.stringify(codes));
+  closeModal('addPromoModal');
+  showToast('Kod promo ditambah!','success');
+  renderPromos();
+}
+function togglePromoActive(id){
+  const codes=JSON.parse(localStorage.getItem('pgp_promo_codes')||'[]');
+  const c=codes.find(x=>x.id===id);
+  if(c){c.active=!c.active; localStorage.setItem('pgp_promo_codes',JSON.stringify(codes)); renderPromos(); showToast('Status dikemas kini.','success');}
+}
+
+function renderWithdrawals(){
+  const wds=JSON.parse(localStorage.getItem('pgp_withdrawals')||'[]').reverse();
+  const users=JSON.parse(localStorage.getItem(AUTH_KEY)||'[]');
+  document.getElementById('withdrawTable').innerHTML=wds.length?`<table class="data-table"><thead><tr><th>Pengguna</th><th>Jumlah</th><th>Bank</th><th>Status</th><th>Tarikh</th><th>Tindakan</th></tr></thead><tbody>
+    ${wds.map(w=>{const u=users.find(x=>x.id===w.userId);return `<tr>
+      <td style="font-weight:600">${u?.name||'-'}</td><td>RM${w.amount}</td><td>${w.bankName} - ${w.accountNumber}</td>
+      <td><span class="badge ${w.status==='approved'?'badge-green':w.status==='pending'?'badge-yellow':'badge-red'}">${w.status}</span></td>
+      <td>${new Date(w.requestedAt).toLocaleDateString('ms-MY')}</td>
+      <td>${w.status==='pending'?`<button class="btn btn-primary btn-sm" onclick="approveWithdrawal('${w.id}')">Lulus</button>`:'-'}</td>
+    </tr>`;}).join('')}
+  </tbody></table>`:'<div class="empty-state"><div class="empty-icon">📭</div><h3>Tiada Permintaan</h3></div>';
+}
+
+function approveWithdrawal(id){
+  const wds=JSON.parse(localStorage.getItem('pgp_withdrawals')||'[]');
+  const w=wds.find(x=>x.id===id);
+  if(w){w.status='approved';w.approvedAt=new Date().toISOString();localStorage.setItem('pgp_withdrawals',JSON.stringify(wds));renderWithdrawals();showToast('Withdrawal diluluskan!','success');}
+}
+
+loadOverview();
+</script>
+</body>
+</html>

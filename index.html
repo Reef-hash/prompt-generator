@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PromptBiz Pro — Jana Landing Page AI untuk Perniagaan Malaysia</title>
+  <meta name="description" content="Jana landing page profesional dalam 60 saat menggunakan AI. Sesuai untuk restoran, butik, salon, dan 20+ jenis perniagaan Malaysia."/>
+  <meta property="og:title" content="PromptBiz Pro — AI Landing Page Generator"/>
+  <meta property="og:description" content="Jana landing page dalam 60 saat. Cuba percuma!"/>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <style>
+    :root{--bg:#0D1117;--bg2:#161B22;--card:#1C2128;--border:#30363D;--accent:#238636;--accent-l:#2EA043;--glow:rgba(35,134,54,.3);--blue:#388BFD;--text:#E6EDF3;--text2:#8B949E;--muted:#484F58;--radius:10px}
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden}
+    a{color:var(--accent-l);text-decoration:none}
+
+    /* NAV */
+    .lp-nav{display:flex;align-items:center;justify-content:space-between;padding:16px 40px;position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(13,17,23,.85);backdrop-filter:blur(12px);border-bottom:1px solid var(--border)}
+    .lp-nav.scrolled{box-shadow:0 4px 20px rgba(0,0,0,.4)}
+    .nav-logo{display:flex;align-items:center;gap:10px}
+    .nav-logo-icon{width:36px;height:36px;background:linear-gradient(135deg,var(--accent),var(--blue));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.1rem}
+    .nav-logo-text{font-weight:800;font-size:1.05rem;background:linear-gradient(135deg,var(--accent-l),#58a6ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .nav-links{display:flex;align-items:center;gap:24px;font-size:.9rem}
+    .nav-links a{color:var(--text2);transition:.25s}.nav-links a:hover{color:var(--text)}
+    .nav-cta{display:flex;gap:10px}
+    .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 20px;border-radius:var(--radius);font-family:'Outfit',sans-serif;font-size:.9rem;font-weight:600;cursor:pointer;border:none;transition:.25s}
+    .btn-p{background:var(--accent);color:#fff}.btn-p:hover{background:var(--accent-l);box-shadow:0 0 24px var(--glow)}
+    .btn-g{background:transparent;color:var(--text2);border:1px solid var(--border)}.btn-g:hover{border-color:var(--accent);color:var(--text)}
+    .btn-lg{padding:14px 28px;font-size:1rem}
+
+    /* HERO */
+    .hero{padding:140px 40px 80px;text-align:center;position:relative;overflow:hidden}
+    .hero::before{content:'';position:absolute;top:-200px;left:50%;transform:translateX(-50%);width:800px;height:800px;background:radial-gradient(circle,rgba(35,134,54,.12) 0%,transparent 60%);pointer-events:none}
+    .hero-badge{display:inline-flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--border);border-radius:20px;padding:6px 16px;font-size:.82rem;color:var(--text2);margin-bottom:24px}
+    .hero-badge span{color:var(--accent-l);font-weight:700}
+    .hero h1{font-size:3.2rem;font-weight:800;line-height:1.2;max-width:700px;margin:0 auto 20px}
+    .hero h1 em{font-style:normal;background:linear-gradient(135deg,var(--accent-l),#58a6ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .hero p{font-size:1.1rem;color:var(--text2);max-width:540px;margin:0 auto 32px;line-height:1.7}
+    .hero-btns{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-bottom:36px}
+    .social-proof{display:flex;align-items:center;justify-content:center;gap:12px;color:var(--text2);font-size:.88rem}
+    .avatar-stack{display:flex}
+    .avatar-stack div{width:32px;height:32px;border-radius:50%;border:2px solid var(--bg);margin-left:-10px;background:linear-gradient(135deg,var(--accent),var(--blue));display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:700;color:#fff}
+    .avatar-stack div:first-child{margin-left:0}
+
+    /* SECTIONS */
+    .section{padding:80px 40px;max-width:1100px;margin:0 auto}
+    .section-title{text-align:center;font-size:2rem;font-weight:800;margin-bottom:8px}
+    .section-title em{font-style:normal;background:linear-gradient(135deg,var(--accent-l),#58a6ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .section-sub{text-align:center;color:var(--text2);max-width:500px;margin:0 auto 48px;font-size:.95rem}
+
+    /* FEATURES */
+    .feat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+    .feat-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:28px 24px;transition:.3s}
+    .feat-card:hover{border-color:var(--accent);transform:translateY(-4px);box-shadow:0 12px 40px rgba(0,0,0,.3)}
+    .feat-icon{font-size:2rem;margin-bottom:14px}
+    .feat-card h3{font-size:1.05rem;font-weight:700;margin-bottom:8px}
+    .feat-card p{font-size:.85rem;color:var(--text2);line-height:1.6}
+
+    /* STEPS */
+    .steps-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px}
+    .step-card{text-align:center;padding:24px 16px}
+    .step-num{width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--blue));display:flex;align-items:center;justify-content:center;font-size:1.2rem;font-weight:800;margin:0 auto 14px}
+    .step-card h3{font-size:1rem;font-weight:700;margin-bottom:6px}
+    .step-card p{font-size:.82rem;color:var(--text2)}
+
+    /* TESTIMONIALS */
+    .test-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+    .test-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:24px;transition:.3s}
+    .test-card:hover{border-color:rgba(56,139,253,.4)}
+    .test-stars{color:#e3b341;margin-bottom:10px;font-size:.9rem}
+    .test-text{font-size:.88rem;color:var(--text2);line-height:1.7;margin-bottom:16px;font-style:italic}
+    .test-author{display:flex;align-items:center;gap:10px}
+    .test-avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--blue));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.75rem;color:#fff}
+    .test-name{font-size:.85rem;font-weight:600}.test-biz{font-size:.75rem;color:var(--muted)}
+
+    /* CTA */
+    .cta-section{text-align:center;padding:100px 40px;background:linear-gradient(180deg,var(--bg) 0%,rgba(35,134,54,.08) 50%,var(--bg) 100%)}
+    .cta-section h2{font-size:2.2rem;font-weight:800;margin-bottom:12px}
+    .cta-section p{color:var(--text2);margin-bottom:28px;font-size:1rem}
+
+    /* FOOTER */
+    .lp-footer{padding:40px;border-top:1px solid var(--border);text-align:center}
+    .footer-links{display:flex;justify-content:center;gap:24px;margin-bottom:16px;flex-wrap:wrap}
+    .footer-links a{color:var(--text2);font-size:.85rem}.footer-links a:hover{color:var(--text)}
+    .footer-copy{font-size:.78rem;color:var(--muted)}
+
+    @media(max-width:900px){.feat-grid,.test-grid{grid-template-columns:1fr 1fr}.steps-grid{grid-template-columns:1fr 1fr}}
+    @media(max-width:600px){
+      .hero h1{font-size:2rem}.lp-nav{padding:14px 16px}.nav-links{display:none}.section{padding:50px 16px}
+      .feat-grid,.test-grid,.steps-grid{grid-template-columns:1fr}
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="lp-nav" id="lpNav">
+  <div class="nav-logo"><div class="nav-logo-icon">✨</div><div class="nav-logo-text">PromptBiz Pro</div></div>
+  <div class="nav-links"><a href="#features">Ciri-ciri</a><a href="#how">Cara Kerja</a><a href="#testimonials">Testimoni</a><a href="pricing.html">Harga</a></div>
+  <div class="nav-cta" id="navCta"><a href="login.html" class="btn btn-g">Log Masuk</a><a href="login.html" class="btn btn-p">Daftar Percuma</a></div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-badge">✨ <span>Baru!</span> Jana HTML sebenar dengan AI</div>
+  <h1>Jana Landing Page Perniagaan dalam <em>60 Saat</em></h1>
+  <p>AI yang faham perniagaan Malaysia — Restoran, Butik, Salon & 25+ jenis lagi. Cipta website profesional tanpa perlu tahu coding.</p>
+  <div class="hero-btns">
+    <a href="login.html" class="btn btn-p btn-lg"><i class="fa fa-rocket"></i> Cuba Percuma 7 Hari</a>
+    <a href="#how" class="btn btn-g btn-lg"><i class="fa fa-play"></i> Tengok Demo</a>
+  </div>
+  <div class="social-proof">
+    <div class="avatar-stack"><div>AR</div><div>SN</div><div>LW</div><div>NK</div><div>+</div></div>
+    <span>Dipercayai <strong style="color:var(--text)">2,000+</strong> pemilik perniagaan Malaysia</span>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="section" id="features">
+  <h2 class="section-title">Kenapa Pilih <em>PromptBiz Pro</em>?</h2>
+  <p class="section-sub">Semua yang anda perlukan untuk bina kehadiran online perniagaan anda.</p>
+  <div class="feat-grid">
+    <div class="feat-card"><div class="feat-icon">🤖</div><h3>AI Jana HTML Sebenar</h3><p>Bukan sekadar teks — AI kami menghasilkan kod HTML lengkap yang boleh terus digunakan sebagai website.</p></div>
+    <div class="feat-card"><div class="feat-icon">🏪</div><h3>25+ Template Perniagaan</h3><p>Restoran, salon, butik, kontraktor, ejen hartanah, dan banyak lagi template khusus Malaysia.</p></div>
+    <div class="feat-card"><div class="feat-icon">📱</div><h3>Responsive & Mobile-Ready</h3><p>Setiap landing page yang dijana secara automatik menyesuaikan saiz pada semua peranti.</p></div>
+    <div class="feat-card"><div class="feat-icon">💾</div><h3>Simpan & Urus Projek</h3><p>Simpan semua prompt dan projek anda. Cari, filter, edit, dan urus dengan mudah.</p></div>
+    <div class="feat-card"><div class="feat-icon">💬</div><h3>WhatsApp Integration</h3><p>Setiap landing page termasuk butang WhatsApp click-to-chat yang siap digunakan.</p></div>
+    <div class="feat-card"><div class="feat-icon">📤</div><h3>Eksport Pelbagai Format</h3><p>Eksport dalam .txt, PDF, DOCX, atau HTML. Salin terus ke clipboard atau guna di Claude/ChatGPT.</p></div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="section" id="how">
+  <h2 class="section-title">Cara <em>Mudahnya</em></h2>
+  <p class="section-sub">Hanya 4 langkah untuk landing page profesional.</p>
+  <div class="steps-grid">
+    <div class="step-card"><div class="step-num">1</div><h3>Pilih Jenis Perniagaan</h3><p>Pilih daripada 25+ kategori perniagaan Malaysia.</p></div>
+    <div class="step-card"><div class="step-num">2</div><h3>Isi Maklumat</h3><p>Masukkan nama, penerangan, warna & maklumat hubungan.</p></div>
+    <div class="step-card"><div class="step-num">3</div><h3>AI Jana Landing Page</h3><p>AI kami membina kod HTML lengkap dalam masa 60 saat.</p></div>
+    <div class="step-card"><div class="step-num">4</div><h3>Simpan & Lancarkan</h3><p>Muat turun, edit, dan lancarkan website anda!</p></div>
+  </div>
+</section>
+
+<!-- TESTIMONIALS -->
+<section class="section" id="testimonials">
+  <h2 class="section-title">Apa Kata <em>Pelanggan</em> Kami</h2>
+  <p class="section-sub">Ribuan pemilik perniagaan Malaysia sudah menggunakan PromptBiz Pro.</p>
+  <div class="test-grid">
+    <div class="test-card"><div class="test-stars">★★★★★</div><div class="test-text">"Saya jimat RM2,000 kos web designer! Landing page yang dijana sangat cantik dan profesional. Pelanggan restoran saya pun puji."</div><div class="test-author"><div class="test-avatar">AR</div><div><div class="test-name">Ahmad Rizal</div><div class="test-biz">🍜 Pemilik Restoran, KL</div></div></div></div>
+    <div class="test-card"><div class="test-stars">★★★★★</div><div class="test-text">"Sebagai freelancer, saya guna PromptBiz untuk buat landing page client saya. Sangat pantas dan hasilnya memang WOW!"</div><div class="test-author"><div class="test-avatar">SN</div><div><div class="test-name">Siti Nurhaliza</div><div class="test-biz">🎨 Freelance Designer, Penang</div></div></div></div>
+    <div class="test-card"><div class="test-stars">★★★★★</div><div class="test-text">"Program affiliate dia pun best! Saya share link, dapat komisyen 30% setiap bulan. Dah collect RM800+ setakat ini."</div><div class="test-author"><div class="test-avatar">LW</div><div><div class="test-name">Lee Wei Ming</div><div class="test-biz">💻 Digital Marketer, JB</div></div></div></div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section">
+  <h2>Jangan Tunggu Lagi. <em style="font-style:normal;background:linear-gradient(135deg,var(--accent-l),#58a6ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent">Mulakan Hari Ini.</em></h2>
+  <p>Cuba percuma 7 hari — tiada kad kredit diperlukan.</p>
+  <a href="login.html" class="btn btn-p btn-lg" style="font-size:1.05rem"><i class="fa fa-rocket"></i> Cuba Percuma Sekarang</a>
+</section>
+
+<!-- FOOTER -->
+<footer class="lp-footer">
+  <div class="footer-links">
+    <a href="pricing.html">Harga</a>
+    <a href="affiliate.html">Affiliate</a>
+    <a href="login.html">Log Masuk</a>
+    <a href="admin.html">Admin</a>
+  </div>
+  <p class="footer-copy">© 2025 PromptBiz Pro. Semua hak terpelihara.</p>
+</footer>
+
+<script>
+  // Navbar scroll effect
+  window.addEventListener('scroll',()=>{document.getElementById('lpNav').classList.toggle('scrolled',window.scrollY>50)});
+
+  // Check if logged in
+  try{
+    const s=JSON.parse(localStorage.getItem('pgp_session')||'null');
+    if(s&&new Date(s.expiresAt)>new Date()){
+      document.getElementById('navCta').innerHTML=`<a href="dashboard.html" class="btn btn-p">Dashboard →</a>`;
+    }
+  }catch(e){}
+
+  // Check ref param for affiliate
+  const params=new URLSearchParams(window.location.search);
+  const ref=params.get('ref');
+  if(ref){localStorage.setItem('pgp_ref',JSON.stringify({code:ref,at:new Date().toISOString()}));}
+
+  // Scroll animation
+  const obs=new IntersectionObserver((entries)=>{entries.forEach(e=>{if(e.isIntersecting){e.target.style.opacity='1';e.target.style.transform='translateY(0)'}})},{threshold:.15});
+  document.querySelectorAll('.feat-card,.step-card,.test-card').forEach(el=>{el.style.opacity='0';el.style.transform='translateY(20px)';el.style.transition='all .5s ease';obs.observe(el)});
+</script>
+</body>
+</html>
