@@ -100,7 +100,7 @@ async function searchPrompts(query) {
   if (!query || !query.trim()) return getUserPrompts();
 
   const q = query.toLowerCase().trim();
-  const { data } = await supabase
+  const { data } = await sb
     .from('prompts')
     .select('*')
     .eq('user_id', session.userId)
@@ -115,7 +115,7 @@ async function filterPrompts(type = 'all', favouriteOnly = false) {
   const session = getSession();
   if (!session) return [];
 
-  let query = supabase.from('prompts').select('*').eq('user_id', session.userId);
+  let query = sb.from('prompts').select('*').eq('user_id', session.userId);
   if (type !== 'all') query = query.eq('business_type', type);
   if (favouriteOnly) query = query.eq('is_favourite', true);
   query = query.order('updated_at', { ascending: false });

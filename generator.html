@@ -407,7 +407,15 @@ const PCTS  = [0,20,40,60,80,100];
 
 function goStep(n) {
   if (n === 2 && !selectedBizType) { showToast('Sila pilih jenis perniagaan dahulu.','error'); return; }
-  if (n === 5) buildPrompt();
+  if (n === 5) {
+    try {
+      buildPrompt();
+    } catch (e) {
+      console.error("Build prompt error:", e);
+      showToast('Gagal menjana prompt: ' + e.message, 'error');
+      return;
+    }
+  }
   document.querySelectorAll('.step-content').forEach(s => s.classList.remove('active'));
   document.getElementById('step'+n).classList.add('active');
   document.getElementById('stepNum').textContent = n;
@@ -587,7 +595,7 @@ function buildPrompt() {
     cta            : document.getElementById('bizCta').value.trim() || 'Hubungi Kami Sekarang',
     language       : document.getElementById('bizLanguage').value,
     animationStyle : document.getElementById('animationStyle').value,
-    themeMode      : document.querySelector('input[name="themeMode"]:checked').value,
+    themeMode      : document.querySelector('input[name="themeMode"]:checked')?.value || 'light',
     extraFeatures  : extras,
     qrInfo: {
       type: document.getElementById('qrType').value,

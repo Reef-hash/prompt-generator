@@ -534,7 +534,7 @@ function buildOutputFormat(d) {
     `3. TIADA fail luaran kecuali CDN (Google Fonts, Font Awesome)`,
     ``,
     `PENTING — Pastikan:`,
-    `✅ WhatsApp link: https://wa.me/${(d.contact?.whatsapp||'601XXXXXXXX').replace(/\D/,'')}`,
+    `✅ WhatsApp link: https://wa.me/${(d.contact?.whatsapp||'601XXXXXXXX').replace(/\D/g,'')}`,
     `✅ Semua butang CTA menonjol dan mendorong tindakan`,
     `✅ Landing page boleh "convert" (ada clear value proposition)`,
     `✅ Kod LENGKAP, bukan sebahagian atau placeholder`,
