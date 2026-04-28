@@ -419,9 +419,12 @@ function buildFeaturesSection(d, businessType, tpl) {
   const specific = specificMap[businessType] || `- Sertakan bahagian yang sesuai dengan jenis perniagaan ini\n- Pastikan ada section produk/perkhidmatan, galeri, dan hubungi`;
   const sections = (tpl.sections || []).map(s => `  ✦ ${s}`).join('\n');
 
-  const extra = d.extraFeatures?.length
-    ? `\nCiri-ciri Tambahan yang Diminta:\n${d.extraFeatures.map(f=>`  ✦ ${f}`).join('\n')}`
-    : '';
+  let extra = '';
+  if (d.extraFeatures && d.extraFeatures.length > 0) {
+    extra = `\nCiri-ciri Tambahan yang Diminta:\n` + d.extraFeatures.map(f => {
+      return `  ✦ ${f.name}\n    Spesifikasi: ${f.detail}`;
+    }).join('\n');
+  }
 
   return [
     `═══════════════════════════════════════════════════════`,

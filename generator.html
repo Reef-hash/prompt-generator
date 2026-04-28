@@ -28,7 +28,16 @@
     .summary-item .s-value { font-size:.9rem; color:var(--text-primary); font-weight:600; }
     .prompt-output { background:var(--bg-primary); border:1px solid var(--border); border-radius:var(--radius); padding:16px; font-family:monospace; font-size:.8rem; line-height:1.7; color:var(--text-secondary); white-space:pre-wrap; max-height:400px; overflow-y:auto; }
     .cat-tag { display:inline-block; padding:2px 10px; border-radius:12px; font-size:.72rem; font-weight:700; background:var(--bg-hover); color:var(--text-muted); margin-bottom:12px; }
-    @media(max-width:768px) { .form-grid-2,.color-row,.summary-grid { grid-template-columns:1fr; } }
+
+    /* Extra Features Styling */
+    .extra-features-list { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .extra-item-wrapper { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; transition: 0.3s; }
+    .extra-item-wrapper:hover { border-color: var(--accent-primary); }
+    .extra-item-wrapper.active { border-color: var(--accent-primary); background: var(--bg-primary); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    .extra-sub-form { display: none; margin-top: 10px; border-top: 1px solid var(--border); padding-top: 10px; animation: slideDown 0.3s ease; }
+    .extra-sub-form input { background: var(--bg-secondary) !important; border-style: dashed !important; }
+    @keyframes slideDown { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+    @media(max-width:768px) { .form-grid-2,.color-row,.summary-grid,.extra-features-list { grid-template-columns:1fr; } }
   </style>
 </head>
 <body>
@@ -247,15 +256,73 @@
           </div>
           <div class="form-group">
             <label class="form-label">Ciri-ciri Tambahan (pilih yang berkenaan)</label>
-            <div class="checkbox-group" id="extraFeatures">
-              <label class="checkbox-item"><input type="checkbox" value="Sistem tempahan online"/> <span>📅 Sistem tempahan online</span></label>
-              <label class="checkbox-item"><input type="checkbox" value="Galeri foto/video"/> <span>🖼️ Galeri foto/video</span></label>
-              <label class="checkbox-item"><input type="checkbox" value="Testimoni pelanggan"/> <span>⭐ Testimoni pelanggan</span></label>
-              <label class="checkbox-item"><input type="checkbox" value="FAQ section"/> <span>❓ FAQ section</span></label>
-              <label class="checkbox-item"><input type="checkbox" value="Peta Google Maps"/> <span>📍 Peta Google Maps</span></label>
-              <label class="checkbox-item"><input type="checkbox" value="WhatsApp chat button"/> <span>💬 WhatsApp floating button</span></label>
-              <label class="checkbox-item"><input type="checkbox" value="Blog/Artikel"/> <span>📝 Blog / Artikel</span></label>
-              <label class="checkbox-item"><input type="checkbox" value="Kalkulator harga"/> <span>🧮 Kalkulator harga</span></label>
+            <p style="font-size: .75rem; color: var(--text-muted); margin-bottom: 12px;">* Isi butiran jika ada permintaan khusus, atau biarkan kosong untuk ditentukan oleh AI.</p>
+            <div class="extra-features-list" id="extraFeatures">
+              
+              <!-- Booking System -->
+              <div class="extra-item-wrapper">
+                <label class="checkbox-item"><input type="checkbox" value="Sistem tempahan online" onchange="toggleExtraForm(this, 'form_booking')"/> <span>📅 Sistem tempahan online</span></label>
+                <div id="form_booking" class="extra-sub-form">
+                  <input type="text" class="form-control form-control-sm" placeholder="Contoh: Temujanji servis, tempahan meja, atau slot masa..."/>
+                </div>
+              </div>
+
+              <!-- Gallery -->
+              <div class="extra-item-wrapper">
+                <label class="checkbox-item"><input type="checkbox" value="Galeri foto/video" onchange="toggleExtraForm(this, 'form_gallery')"/> <span>🖼️ Galeri foto/video</span></label>
+                <div id="form_gallery" class="extra-sub-form">
+                  <input type="text" class="form-control form-control-sm" placeholder="Contoh: Kategori produk, video testimoni, atau portfolio..."/>
+                </div>
+              </div>
+
+              <!-- Testimonials -->
+              <div class="extra-item-wrapper">
+                <label class="checkbox-item"><input type="checkbox" value="Testimoni pelanggan" onchange="toggleExtraForm(this, 'form_testimoni')"/> <span>⭐ Testimoni pelanggan</span></label>
+                <div id="form_testimoni" class="extra-sub-form">
+                  <input type="text" class="form-control form-control-sm" placeholder="Contoh: Fokus pada kepuasan pelanggan atau hasil kerja..."/>
+                </div>
+              </div>
+
+              <!-- FAQ -->
+              <div class="extra-item-wrapper">
+                <label class="checkbox-item"><input type="checkbox" value="FAQ section" onchange="toggleExtraForm(this, 'form_faq')"/> <span>❓ FAQ section</span></label>
+                <div id="form_faq" class="extra-sub-form">
+                  <input type="text" class="form-control form-control-sm" placeholder="Sertakan soalan khusus jika ada..."/>
+                </div>
+              </div>
+
+              <!-- Maps -->
+              <div class="extra-item-wrapper">
+                <label class="checkbox-item"><input type="checkbox" value="Peta Google Maps" onchange="toggleExtraForm(this, 'form_maps')"/> <span>📍 Peta Google Maps</span></label>
+                <div id="form_maps" class="extra-sub-form">
+                  <input type="text" class="form-control form-control-sm" placeholder="Nama lokasi atau koordinat khusus..."/>
+                </div>
+              </div>
+
+              <!-- WhatsApp -->
+              <div class="extra-item-wrapper">
+                <label class="checkbox-item"><input type="checkbox" value="WhatsApp chat button" onchange="toggleExtraForm(this, 'form_wa')"/> <span>💬 WhatsApp floating button</span></label>
+                <div id="form_wa" class="extra-sub-form">
+                  <input type="text" class="form-control form-control-sm" placeholder="Teks mesej automatik (Contoh: Nak tanya pasal servis...)"/>
+                </div>
+              </div>
+
+              <!-- Blog -->
+              <div class="extra-item-wrapper">
+                <label class="checkbox-item"><input type="checkbox" value="Blog / Artikel" onchange="toggleExtraForm(this, 'form_blog')"/> <span>📝 Blog / Artikel</span></label>
+                <div id="form_blog" class="extra-sub-form">
+                  <input type="text" class="form-control form-control-sm" placeholder="Topik utama blog..."/>
+                </div>
+              </div>
+
+              <!-- Calculator -->
+              <div class="extra-item-wrapper">
+                <label class="checkbox-item"><input type="checkbox" value="Kalkulator harga" onchange="toggleExtraForm(this, 'form_calc')"/> <span>🧮 Kalkulator harga</span></label>
+                <div id="form_calc" class="extra-sub-form">
+                  <input type="text" class="form-control form-control-sm" placeholder="Jenis kalkulator (Contoh: Kos renovasi, BMI, pinjaman...)"/>
+                </div>
+              </div>
+
             </div>
           </div>
           <div class="nav-btns">
@@ -381,6 +448,18 @@ function selectTone(el, tone) {
   selectedTone = tone;
 }
 
+function toggleExtraForm(cb, formId) {
+  const form = document.getElementById(formId);
+  const wrapper = cb.closest('.extra-item-wrapper');
+  if (cb.checked) {
+    form.style.display = 'block';
+    wrapper.classList.add('active');
+  } else {
+    form.style.display = 'none';
+    wrapper.classList.remove('active');
+  }
+}
+
 // Color hex labels
 ['colorPrimary','colorSecondary','colorAccent'].forEach(id => {
   const el  = document.getElementById(id);
@@ -390,7 +469,18 @@ function selectTone(el, tone) {
 
 // ── Build & show prompt ──────────────────────────────
 function buildPrompt() {
-  const extras = [...document.querySelectorAll('#extraFeatures input:checked')].map(c=>c.value);
+  // Collect extra features with their details
+  const extras = [];
+  document.querySelectorAll('#extraFeatures input[type="checkbox"]:checked').forEach(cb => {
+    const wrapper = cb.closest('.extra-item-wrapper');
+    const detailInput = wrapper.querySelector('.extra-sub-form input');
+    const detail = detailInput ? detailInput.value.trim() : '';
+    extras.push({
+      name: cb.value,
+      detail: detail || 'BIARKAN AI TENTUKAN (Gunakan kreativiti anda)'
+    });
+  });
+
   const formData = {
     businessName   : document.getElementById('bizName').value.trim() || 'Perniagaan Anda',
     location       : document.getElementById('bizLocation').value.trim(),
