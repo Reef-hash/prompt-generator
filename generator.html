@@ -284,6 +284,27 @@
               <input type="text" class="form-control" id="contactIg" placeholder="@perniagaan"/>
             </div>
           </div>
+
+          <!-- QR Payment Section (NEW) -->
+          <div class="form-group" style="margin-top: 20px; border-top: 1px solid var(--border); padding-top: 20px;">
+            <label class="form-label">💳 Maklumat Pembayaran (QR Code)</label>
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label class="form-label">Jenis QR</label>
+                <select class="form-control" id="qrType">
+                  <option value="DuitNow">DuitNow</option>
+                  <option value="TNG eWallet">TNG eWallet</option>
+                  <option value="MAE">MAE</option>
+                  <option value="GrabPay">GrabPay</option>
+                  <option value="Pilihan">Lain-lain</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">URL Gambar QR</label>
+                <input type="text" class="form-control" id="qrUrl" placeholder="https://link-ke-gambar-qr.jpg"/>
+              </div>
+            </div>
+          </div>
           <div class="form-group">
             <label class="form-label">Ciri-ciri Tambahan (pilih yang berkenaan)</label>
             <p style="font-size: .75rem; color: var(--text-muted); margin-bottom: 12px;">* Isi butiran jika ada permintaan khusus, atau biarkan kosong untuk ditentukan oleh AI.</p>
@@ -598,8 +619,8 @@ function buildPrompt() {
     themeMode      : document.querySelector('input[name="themeMode"]:checked')?.value || 'light',
     extraFeatures  : extras,
     qrInfo: {
-      type: document.getElementById('qrType').value,
-      url: document.getElementById('qrUrl').value.trim()
+      type: document.getElementById('qrType')?.value || 'DuitNow',
+      url: document.getElementById('qrUrl')?.value.trim() || ''
     },
     images: [...document.querySelectorAll('.biz-image-input')].map(i => i.value.trim()).filter(Boolean),
     products: [...document.querySelectorAll('.product-item-card')].map(card => ({
